@@ -1,0 +1,8 @@
+{
+    "newComponent": {
+        "componentsPath": "src/components"
+    },
+
+    "boardGlobalSetup": "./src/boards-global-setup.ts"    
+
+}
