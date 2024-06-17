@@ -50,6 +50,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/?search=:query" element={<Home />} />
         <Route path="/:id" element={<FoodPage />} />
       </Routes>
     </Router>

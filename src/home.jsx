@@ -1,64 +1,60 @@
-import React, {useEffect, useState} from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Link,
-  useNavigate,
-} from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import SearchBar from "./components/searchbar";
 import FoodCards from "./components/food-cards";
 import Header from "./components/header";
 import { useQuery, gql } from "@apollo/client";
+import { set } from "lodash";
 
-
-// Import your components for different routes
 function Home() {
-  const navigate = useNavigate();
+  const [searchResults, setSearchResults] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const handleClick = () => {
-    navigate("/");
+
+  const handleSearchResults = (results) => {
+    setSearchResults(results);
+    setSearchTerm(results.searchTerm);
   };
 
-  const GET_TOP_RECIPES = gql `
+  const GET_TOP_RECIPES = gql`
   {
-  Get {
-    Recipes(
-      sort: {
-        path: ["rating"]  # Path to the property to sort by
-        order: desc        # Sort order, asc (default) or desc
+    Get {
+      Recipes(
+        sort: {
+          path: ["rating"]
+          order: desc
+        }
+        limit: 10
+      ) {
+        title
+        rating
+        _additional {
+          id
+        }
       }
-      limit: 10
-    ) {
-      title
-      rating
-			_additional {
-				id
-			}
     }
-  }
-}`
+  }`;
 
   const { loading, error, data } = useQuery(GET_TOP_RECIPES);
-  if (error) return <pre>{error.message}</pre>
+
+  if (error) return <pre>{error.message}</pre>;
+
+  // Determine whether to display search results or top recipes
+  const displayData = searchTerm ? searchResults.dataDict : data?.Get?.Recipes || [];
 
   return (
     <div className="h-full w-full">
       <Header />
-
       <div className="md:text-9xl text-center text-4xl">Text</div>
-
-      <SearchBar />
-
+      <SearchBar searchResults={handleSearchResults} />
       <div className="text-center font-semibold text-3xl pb-1">
-        {" "}
-        ~Here are our top `n` dishes~{" "}
+        {/* Display search term if present */}
+        {searchTerm && `Results for "${searchTerm}"`}
       </div>
-
       {loading ? <p>Loading...</p> :
       <div className="flex justify-center my-2">
         <div className="grid grid-cols-5 gap-10">
-          {data.Get.Recipes.map((recipe) => (
+          {displayData.map((recipe) => (
             <FoodCards
               key={recipe._additional.id}
               image={"https://picsum.photos/350"}
@@ -70,7 +66,6 @@ function Home() {
         </div>
       </div>
       }
-      
     </div>
   );
 }

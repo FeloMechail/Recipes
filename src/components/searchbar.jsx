@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, gql } from "@apollo/client";
-import {useNavigate} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 
 // Define the GraphQL query outside of the component
 const GET_SUGGESTIONS_QUERY = gql`
@@ -10,7 +10,7 @@ const GET_SUGGESTIONS_QUERY = gql`
         hybrid: {
           query: $query
         }
-        limit: 5
+        limit: 10
       ) {
         title
         rating
@@ -20,10 +20,11 @@ const GET_SUGGESTIONS_QUERY = gql`
   }
 `;
 
-const SearchBar = () => {
+const SearchBar = ({searchResults}) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
+  const [dataDict, setDataDict] = useState({});
  
     // Use the useQuery hook at the top level of your component
     const { data, loading, error, refetch } = useQuery(GET_SUGGESTIONS_QUERY, {
@@ -32,6 +33,7 @@ const SearchBar = () => {
     });
   
     useEffect(() => {
+
         if (searchTerm) {
           // Only refetch the query if searchTerm is not empty
           refetch({ query: searchTerm });
@@ -41,6 +43,7 @@ const SearchBar = () => {
     useEffect(() => {
       if (data) {
         // Update suggestions based on the query result
+        setDataDict(data.Get.Recipes);
         setSuggestions(data.Get.Recipes.map((recipe) => [recipe.title, recipe.rating, recipe._additional.id]));
       }
     }, [data]);
@@ -49,14 +52,13 @@ const SearchBar = () => {
     setSearchTerm(event.target.value);
   };
 
-    const handleSearch = () => {
+    const handleSearch = (event) => {
       // Implement your search logic here
-      console.log("Searching for:", searchTerm);
-
+      event.preventDefault(); // Prevent the form from submitting
+      searchResults({searchTerm, dataDict});
     };
 
     const handleSuggestionClick = (suggestion) => {
-      console.log("Clicked on suggestion:", suggestion);
       navigate(`/${suggestion[2]}`);
     }
 
@@ -101,7 +103,7 @@ const SearchBar = () => {
          {/* Suggestions dropdown */}
          {(suggestions.length > 0 && searchTerm.length != 0 ) && (
             <ul className="absolute z-10 w-full bg-white shadow-md max-h-60 overflow-auto rounded-lg">
-              {suggestions.map((suggestion, index) => (
+              {suggestions.slice(0, 5).map((suggestion, index) => (
                 <li
                   key={index}
                   className="p-2 hover:bg-gray-100 cursor-pointer"
