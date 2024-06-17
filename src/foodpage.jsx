@@ -72,6 +72,8 @@ const FoodPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [recipes, setRecipes] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
 
   const { loading, error, data } = useQuery(GET_RECIPE, {
     variables: { id },
@@ -81,6 +83,11 @@ const FoodPage = () => {
     variables: { id: id, ids: id },
   });
 
+
+  const handleSearch = (e) => {
+    navigate('/', { state: { e } });
+    console.log("Search term:", e);
+  }
 
   useEffect(() => {
     if (error) {
@@ -111,7 +118,7 @@ const FoodPage = () => {
   return (
     <div className="pb-20">
       <Header />
-      <SearchBar />
+      <SearchBar searchResults={handleSearch} />
 
       <div>
         <img

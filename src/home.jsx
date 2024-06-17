@@ -9,9 +9,22 @@ import { set } from "lodash";
 function Home() {
   const [searchResults, setSearchResults] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
+  const location = useLocation();
 
+  useEffect(() => {
+    if (location.state.e != null) {
+      console.log("location.state: ", location.state.e);
+      handleSearchResults(location.state.e);
+    } else if (location.state.e == null) {
+      //reset search results
+      setSearchResults({});
+      setSearchTerm('');
+    }
+  }
+  , [location]);
 
   const handleSearchResults = (results) => {
+    console.log("results: ", results);
     setSearchResults(results);
     setSearchTerm(results.searchTerm);
   };
@@ -38,6 +51,7 @@ function Home() {
   const { loading, error, data } = useQuery(GET_TOP_RECIPES);
 
   if (error) return <pre>{error.message}</pre>;
+  console.log("searchTerm: ", searchTerm);
 
   // Determine whether to display search results or top recipes
   const displayData = searchTerm ? searchResults.dataDict : data?.Get?.Recipes || [];

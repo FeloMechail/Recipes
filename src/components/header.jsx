@@ -10,7 +10,7 @@ const Header = () => {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate("/");
+    navigate('/', { state: { e: null } });
   };
 
   return (
