@@ -5,12 +5,13 @@ import {
   Route,
   useNavigate,
 } from "react-router-dom";
+import FoodPage from "../foodpage";
 
-const FoodCards = ({ image, title, rating }) => {
+const FoodCards = ({ image, title, rating, id }) => {
   const navigate = useNavigate();
 
-  const handleClick = () => {
-    navigate("/food");
+  const handleClick = () => {``
+    navigate(`/${id}`);
   };
 
   return (
@@ -23,7 +24,7 @@ const FoodCards = ({ image, title, rating }) => {
         />
         <div className="p-2 font-semibold">
           <div className="text-lg">
-            Apple Watch Series 7 GPS, Aluminium Case, Starlight Sport
+            {title}
           </div>
           <div className="flex items-center mt-2">
             <div className="flex items-center space-x-1 rtl:space-x-reverse">

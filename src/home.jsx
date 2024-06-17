@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect, useState} from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -9,6 +9,8 @@ import {
 import SearchBar from "./components/searchbar";
 import FoodCards from "./components/food-cards";
 import Header from "./components/header";
+import { useQuery, gql } from "@apollo/client";
+
 
 // Import your components for different routes
 function Home() {
@@ -17,6 +19,28 @@ function Home() {
   const handleClick = () => {
     navigate("/");
   };
+
+  const GET_TOP_RECIPES = gql `
+  {
+  Get {
+    Recipes(
+      sort: {
+        path: ["rating"]  # Path to the property to sort by
+        order: desc        # Sort order, asc (default) or desc
+      }
+      limit: 10
+    ) {
+      title
+      rating
+			_additional {
+				id
+			}
+    }
+  }
+}`
+
+  const { loading, error, data } = useQuery(GET_TOP_RECIPES);
+  if (error) return <pre>{error.message}</pre>
 
   return (
     <div className="h-full w-full">
@@ -31,18 +55,21 @@ function Home() {
         ~Here are our top `n` dishes~{" "}
       </div>
 
+      {loading ? <p>Loading...</p> :
       <div className="flex justify-center my-2">
         <div className="grid grid-cols-5 gap-10">
-          {Array.from({ length: 10 }).map((_, index) => (
+          {data.Get.Recipes.map((recipe) => (
             <FoodCards
-              key={index}
-              image={`https://picsum.photos/350?random=${index}`}
-              title={`Food ${index + 1}`}
-              rating={Math.floor(Math.random() * 5) + 1}
+              key={recipe._additional.id}
+              image={"https://picsum.photos/350"}
+              title={recipe.title}
+              rating={recipe.rating}
+              id={recipe._additional.id}
             />
           ))}
         </div>
       </div>
+      }
       
     </div>
   );
