@@ -1,21 +1,143 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useParams } from "react-router-dom";
+import { gql, useApolloClient } from "@apollo/client";
+
+
+// Simplify generateTask function for clarity
+const generateTask = (text, ids) => {
+  return `
+     {
+Get {
+  Recipes(
+    where: {
+      path: ["id"],
+      operator: Equal,
+      valueString: "${ids}"
+    }
+  ) {
+    
+    _additional {
+      id
+      generate (
+        groupedResult: {
+      task: """
+      You are a professional cook assistant AI. You will assist with cooking-related inquiries by using the given recipe and extracting necessary information from it. Your responses should be clear, precise, and tailored to the specific prompt without repeating any information. If information is not given in the recipe, say so. Give me an answer in 2 sentences or less.
+
+  "prompt"
+
+  ${text}
+  """
+      }
+      ) {
+        groupedResult
+        error
+      }
+    }
+  }
+}
+}
+  `
+}
 
 const ChatBar = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chat, setChat] = useState([]);
+  const client = useApolloClient();
+  const endOfMessagesRef = useRef(null);
+  const { id } = useParams();
 
-  const handleInputChange = (event) => {
-    setSearchTerm(event.target.value);
-  };
+  // Use effect for scrolling into view
+  useEffect(() => {
+    if (chat.length > 0) {
+      endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chat]);
 
-  const handleSearch = () => {
-    // Implement your search logic here
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    setIsChatOpen(true);
+    setChat((prevChat) => [...prevChat, { user: "user", message: searchTerm }]);
+    
+    let query = generateTask(searchTerm, id);
+
+    try {
+      const { data } = await client.query({
+        query: gql`${query}`,
+      });
+
+      console.log("AI response:", data);
+
+      if(data){
+        setChat((prevChat) => [...prevChat, { user: "bot", message: data.Get.Recipes[0]._additional.generate.groupedResult }]);
+      }    
+    } catch (error) {
+      console.error("An error occurred:", error);
+      if (error.graphQLErrors) {
+        error.graphQLErrors.forEach((err) => {
+          console.log("GraphQL error:", err.message);
+        });
+      }
+      if (error.networkError) {
+        console.log("Network error:", error.networkError.message);
+      }
+    }
+
     console.log("Searching for:", searchTerm);
   };
 
+  const mockChat = [
+    {
+      user: "user",
+      message: "Hello",
+    },
+    {
+      user
+      : "bot",
+      message: "Hi! I'm a chatbot. How can I help you today?",
+    },
+    {
+      user: "user",
+      message: "I want to know more about this recipe",
+    },
+    {
+      user: "bot",
+      message: "Sure! What do you want to know?",
+    },
+  ];
+
   return (
+    <div>
+    {isChatOpen && (
+        //show square chat box width of chat bar above the chat bar
+        <div className="bg-white border shadow-lg mx-auto max-w-4xl rounded-lg max-h-80 overflow-auto">
+          <div className="p-4">
+            <div className="flex flex-col space-y-2">
+            {chat.map((message, index) => (
+              <div
+                key={index}
+                className={`flex ${
+                  message.user === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`${
+                    message.user === "user" ? "bg-blue-500" : "bg-gray-300 text-black"
+                  } text-white rounded-lg p-2`}
+                >
+                  {message.message}
+                </div>
+              </div>
+            ))}
+            </div>
+        </div>
+        <div ref={endOfMessagesRef} />
+      </div>
+    )}
     <form
       onSubmit={handleSearch}
-      className="md:max-w-4xl lg:max-w-5xl mx-auto m-5 max-w-sm"
+      className="md:max-w-4xl lg:max-w-5xl mx-auto mb-5 max-w-sm"
     >
       <label
         htmlFor="Enter"
@@ -50,7 +172,14 @@ const ChatBar = () => {
             />
           </svg>
         </div>
-        <input type="search" className="border shadow block w-full p-4 ps-12 text-sm rounded-lg bg-secondary border-solid border- focus:ring-primary focus:border-primary hover:shadow-md" placeholder="Talk to AI..." ></input>
+        
+        <input id="chatbar" className="border shadow block w-full p-4 ps-12 text-sm rounded-lg bg-secondary border-solid border- focus:ring-primary focus:border-primary hover:shadow-md" placeholder="Talk to AI..." required onChange={(e) => setSearchTerm(e.target.value)} />
+        <input
+            type="checkbox"
+            checked={isChatOpen}
+            onChange={() => setIsChatOpen(!isChatOpen)}
+            className="absolute end-[calc(100%+10px)] bottom-2.5" // Adjust positioning as needed
+          />
         <button
           type="submit"
           className="text-button-primary absolute end-2.5 bottom-2.5 bg-primary hover:bg-hover-primary focus:ring-4 focus:outline-none focus:ring-focus-primary font-medium rounded-lg text-sm px-4 py-2"
@@ -59,6 +188,7 @@ const ChatBar = () => {
         </button>
       </div>
     </form>
+    </div>
   );
 };
 

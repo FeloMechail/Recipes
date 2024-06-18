@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useQuery, gql } from "@apollo/client";
 import {useNavigate, useParams} from "react-router-dom";
-import { set } from "lodash";
+import { set, debounce } from "lodash";
 
 // Define the GraphQL query outside of the component
 const GET_SUGGESTIONS_QUERY = gql`
@@ -20,7 +20,7 @@ const GET_SUGGESTIONS_QUERY = gql`
     }
   }
 `;
-
+//maybe it doesnt work beccause of second query
 const GET_AI_RECIPES = gql`
   query GetAiRecipes($query: String!)
   {
@@ -67,6 +67,8 @@ const SearchBar = ({searchResults}) => {
   const [useAi, setUseAi] = useState(false);  // State to toggle AI
   const [stopSearch, setStopSearch] = useState(false);
   const [aiiloading, setLoading] = useState(false);
+  const [isSuggestionVisible, setIsSuggestionVisible] = useState(false);
+
  
     // Use the useQuery hook at the top level of your component
     const { data, loading, error, refetch } = useQuery(GET_SUGGESTIONS_QUERY, {
@@ -82,10 +84,21 @@ const SearchBar = ({searchResults}) => {
 
   console.log('AI switch:', useAi);
 
+    // Debounce the search input to avoid multiple renders
+    const debouncedSearch = useCallback(
+      debounce((query) => {
+        console.log('Debouncing search with query:', query); // Add this line
+        if (!stopSearch) {
+          refetch({ query });
+        }
+      }, 5000),
+      [stopSearch, refetch]
+    );
+
     useEffect(() => {
         if (searchTerm) {
           // Only refetch the query if searchTerm is not empty
-          refetch({ query: searchTerm });
+          debouncedSearch(searchTerm);
         }
     }, [searchTerm]);
    
@@ -150,7 +163,7 @@ const SearchBar = ({searchResults}) => {
       >
         Search
       </label>
-      <div className="relative">
+      <div className="relative" tabIndex="0" onBlur={() => setIsSuggestionVisible(false)} onFocus={() => setIsSuggestionVisible(true)}>
         <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
           <svg
             className="w-4 h-4 text-icon-primary"
@@ -177,13 +190,14 @@ const SearchBar = ({searchResults}) => {
           required
         />
          {/* Suggestions dropdown */}
-         {(suggestions.length > 0 && searchTerm.length != 0 ) && (
+         {(suggestions.length > 0 && searchTerm.length != 0 && isSuggestionVisible ) && (
             <ul className="absolute z-10 w-full bg-white shadow-md max-h-60 overflow-auto rounded-lg">
               {suggestions.slice(0, 5).map((suggestion, index) => (
                 <li
                   key={index}
                   className="p-2 hover:bg-gray-100 cursor-pointer"
                   onClick={() => handleSuggestionClick(suggestion)}
+                  
                 >
                   <span className="font-semibold">{suggestion[0]}</span> - Rating: {suggestion[1]}
                 </li>

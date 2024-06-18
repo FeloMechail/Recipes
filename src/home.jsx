@@ -13,10 +13,10 @@ function Home() {
   const location = useLocation();
 
   useEffect(() => {
-    if (location.state.e != null) {
+    if (location.state && location.state.e != null) {
       console.log("location.state: ", location.state.e);
       handleSearchResults(location.state.e);
-    } else if (location.state.e == null) {
+    } else if (location.state && location.state.e == null) {
       //reset search results
       setSearchResults({});
       setSearchTerm('');
