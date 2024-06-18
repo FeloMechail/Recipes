@@ -9,6 +9,7 @@ import { set } from "lodash";
 function Home() {
   const [searchResults, setSearchResults] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [useAi, setUseAi] = useState(false);  // State to toggle AI
   const location = useLocation();
 
   useEffect(() => {
@@ -27,6 +28,7 @@ function Home() {
     console.log("results: ", results);
     setSearchResults(results);
     setSearchTerm(results.searchTerm);
+    setUseAi(results.useAi);
   };
 
   const GET_TOP_RECIPES = gql`
@@ -51,7 +53,7 @@ function Home() {
   const { loading, error, data } = useQuery(GET_TOP_RECIPES);
 
   if (error) return <pre>{error.message}</pre>;
-  console.log("searchTerm: ", searchTerm);
+  console.log("data: ", data);
 
   // Determine whether to display search results or top recipes
   const displayData = searchTerm ? searchResults.dataDict : data?.Get?.Recipes || [];
@@ -64,9 +66,10 @@ function Home() {
       <div className="text-center font-semibold text-3xl pb-1">
         {/* Display search term if present */}
         {searchTerm && `Results for "${searchTerm}"`}
+        {searchTerm && useAi && <div className="bg-secondary-200 border text-xs p-2">{displayData[0]._additional.generate.groupedResult} </div>}
       </div>
       {loading ? <p>Loading...</p> :
-      <div className="flex justify-center my-2">
+      <div className="flex justify-center m-2">
         <div className="grid grid-cols-5 gap-10">
           {displayData.map((recipe) => (
             <FoodCards
