@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { gql, useApolloClient } from "@apollo/client";
 
-
 // Simplify generateTask function for clarity
 const generateTask = (text, ids) => {
   return `
@@ -21,12 +20,13 @@ Get {
       generate (
         groupedResult: {
       task: """
-      You are a professional cook assistant AI. Assist with whatever the user is asking about the recipe. Your responses should be clear, precise, and tailored to the specific prompt without repeating any information. use only from given information about recipes.
+      You are a professional cook assistant AI. Assist with whatever the user is asking about the recipe. Your responses should be clear, precise, and tailored to the specific prompt without repeating any information. use only from given information about recipes. provide in 2-3 sentences. Answer only the prompt do not start with here's a summary, or according to the recipe, or any other generic phrase. just answer the prompt. if there is not information to answer the prompt, respond with "I don't have that information."
 
       "prompt"
 
       ${text}
       """
+      properties: ["title", "rating", "ingredients", "calories", "protein", "fat"]
       }
       ) {
         groupedResult
@@ -115,8 +115,8 @@ const ChatBar = () => {
     {isChatOpen && (
       //show square chat box width of chat bar above the chat bar
       <div className="bg-white border shadow-lg mx-auto max-w-4xl rounded-lg max-h-80 overflow-auto">
-        <button className="" onClick={() => setChat([])}>clear</button>
-        {chat.length === 0 && <div>Start chatting!</div>}
+        <button className={`${chat.length > 0 ? "block" : "hidden" } fixed m-3 bg-secondary-200 rounded-md p-3`} onClick={() => setChat([])}>clear</button>
+        {chat.length === 0 && <div className="m-3 text-gray-400">Start chatting!</div>}
           <div className="p-4">
             <div className="flex flex-col space-y-2">
             {chat.map((message, index) => (
@@ -128,8 +128,8 @@ const ChatBar = () => {
               >
                 <div
                   className={`${
-                    message.user === "user" ? "bg-blue-500" : "bg-gray-300 text-black"
-                  } text-white rounded-lg p-2`}
+                    message.user === "user" ? "bg-blue-500 text-white" : "bg-gray-300 text-black"
+                  } rounded-lg p-2`}
                 >
                   {message.message}
                 </div>

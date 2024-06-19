@@ -20,10 +20,10 @@ const Header = () => {
           <h1>RECIPES</h1>
         </button>
       </div>
-      <div className="md:flex md:justify-end md:space-x-5 hidden">
+      {/* <div className="md:flex md:justify-end md:space-x-5 hidden">
         <h1>Heading 1</h1>
         <h1>Heading 2</h1>
-      </div>
+      </div> */}
     </div>
   );
 };

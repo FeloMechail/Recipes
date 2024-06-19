@@ -21,7 +21,98 @@ const GET_SUGGESTIONS_QUERY = gql`
   }
 `;
 
-//maybe it doesnt work beccause of second query
+const generatedHybridFilterTask = (Ai, query, proteinMin, proteinMax, caloriesMin, caloriesMax, fatMin, fatMax, sodiumMin, sodiumMax, ratingMin, ratingMax) => {
+  let requireAi = Ai;
+  return `
+  {
+  Get {
+    Recipes (
+        where: {
+          operator: And,
+          operands: [
+          ` + (proteinMin ? `
+            {
+              path: ["protein"],
+              operator: GreaterThanEqual,
+              valueNumber: ${proteinMin}
+            },` : ``) + `` + (proteinMax ? `
+            {
+              path: ["protein"],
+              operator: LessThanEqual,
+              valueNumber: ${proteinMax}
+            }, ` : ``) + `` + (caloriesMin ? `
+            {
+              path: ["calories"],
+              operator: GreaterThanEqual,
+              valueNumber: ${caloriesMin}
+            }, ` : ``) + `` + (caloriesMax ? `
+            {
+              path: ["calories"],
+              operator: LessThanEqual,
+              valueNumber: ${caloriesMax}
+            }, ` : ``) + `` + (fatMin ? `
+            {
+              path: ["fat"],
+              operator: GreaterThanEqual,
+              valueNumber: ${fatMin}
+            }, ` : ``) + `` + (fatMax ? `
+            {
+              path: ["fat"],
+              operator: LessThanEqual,
+              valueNumber: ${fatMax}
+            }, ` : ``) + `` + (sodiumMin ? `
+            {
+              path: ["sodium"],
+              operator: GreaterThanEqual,
+              valueNumber: ${sodiumMin}
+            }, ` : ``) + `` + (sodiumMax ? `
+            {
+              path: ["sodium"],
+              operator: LessThanEqual,
+              valueNumber: ${sodiumMax}
+            }, ` : ``) + ` ` + (ratingMin ? ` 
+            {
+              path: ["rating"],
+              operator: GreaterThanEqual,
+              valueNumber: ${ratingMin}
+            }, ` : ``) + `` + (ratingMax ? `
+            {
+              path: ["rating"],
+              operator: LessThanEqual,
+              valueNumber: ${ratingMax}
+            } ` : ``) + ` 
+          ]
+        }
+      hybrid: {
+        query: "${query}"
+      }
+      limit: ` + (requireAi ? `5` : `10`) + ` 
+    ) {
+      title
+      rating
+      _additional {
+        id
+        ` + (requireAi ? `generate(
+          groupedResult: {
+            task: """
+                          You are a professional cook assistant AI. You will assist with cooking-related inquiries by using the given list of information about recipes. Your responses should be clear, precise, and tailored to the specific prompt without repeating any information.
+                          do not start with here's a summary, or according to the recipe, or any other generic phrase. answer only from the given information about recipes. if there is not information to answer the prompt, respond with "I don't have that information." give 2-3 sentences.
+
+                          "prompt"
+
+                          ${query}
+            """
+          }
+        ) {
+          groupedResult
+          error
+        }` : ``) + `
+      }
+    }
+  }
+}
+  `};
+
 const generateTask = (text) => {
   return `
   {
@@ -44,8 +135,7 @@ const generateTask = (text) => {
           groupedResult: {
             task: """
                           You are a professional cook assistant AI. You will assist with cooking-related inquiries by using the given list of information about recipes. Your responses should be clear, precise, and tailored to the specific prompt without repeating any information.
-                          do not start with here's a summary, or according to the recipe, or any other generic phrase. just answer the prompt
-						
+                          do not start with here's a summary, or according to the recipe, or any other generic phrase. answer only from the given information about recipes. if there is not information to answer the prompt, respond with "I don't have that information." give 2-3 sentences.
 						"prompt"
 
 						${text}
@@ -70,8 +160,10 @@ const SearchBar = ({searchResults}) => {
   const [stopSearch, setStopSearch] = useState(false);
   const [aiiloading, setLoading] = useState(false);
   const [isSuggestionVisible, setIsSuggestionVisible] = useState(false);
-  const client = useApolloClient();
+  const [showFilter, setShowFilter] = useState(false);
+  const [filter, setFilter] = useState({});
 
+  const client = useApolloClient();
  
     // Use the useQuery hook at the top level of your component
     const { data, loading, error, refetch } = useQuery(GET_SUGGESTIONS_QUERY, {
@@ -80,6 +172,9 @@ const SearchBar = ({searchResults}) => {
     });
 
     console.log('AI switch:', useAi);
+    console.log("filter", showFilter) 
+    console.log("filter", typeof filter)
+    console.log("filter length", Object.keys(filter).length)
 
     // Debounce the search input to avoid multiple renders
     const debouncedSearch = useCallback(
@@ -93,7 +188,12 @@ const SearchBar = ({searchResults}) => {
     );
 
     useEffect(() => {
+      if(!showFilter){
+        setFilter({});
+      }
+
         if (searchTerm) {
+          setIsSuggestionVisible(true);
           // Only refetch the query if searchTerm is not empty
           debouncedSearch(searchTerm);
         }
@@ -113,9 +213,19 @@ const SearchBar = ({searchResults}) => {
 
   const handleSearch = async (event) => {
     event.preventDefault(); // Prevent the form from submitting
+    let filteredQuery = null;
+
+    if (Object.keys(filter).length > 0) {
+      console.log('Filter:', filter);
+      let { proteinMin, proteinMax, caloriesMin, caloriesMax, fatMin, fatMax, sodiumMin, sodiumMax, ratingMin, ratingMax } = filter;
+
+      filteredQuery = generatedHybridFilterTask(useAi, searchTerm, proteinMin || null, proteinMax || null, caloriesMin || null, caloriesMax || null, fatMin || null, fatMax || null, sodiumMin || null, sodiumMax || null, ratingMin || null, ratingMax || null);
+      console.log('Generated query:', filteredQuery);
+    }
+
     if (useAi) {
       setStopSearch(false);
-      let query = generateTask(searchTerm);
+      const query = filteredQuery || generateTask(searchTerm);
       setLoading(true);
       
       const { data } = await client.query({
@@ -130,12 +240,33 @@ const SearchBar = ({searchResults}) => {
       }
 
     } else {
-      searchResults({ searchTerm, dataDict, useAi });
+
+      if(Object.keys(filter).length > 0){
+
+        const { data } = await client.query({
+          query: gql`${filteredQuery}`,
+        });
+
+        if (data) {
+          console.log('Filtered data:', data);
+          searchResults({ searchTerm, dataDict: data.Get.Recipes, useAi });
+        }
+        
+      } else {
+        console.log("here")
+        searchResults({ searchTerm, dataDict, useAi });
+
     }
   };
+}
 
     const handleSuggestionClick = (suggestion) => {
       navigate(`/${suggestion[2]}`);
+    }
+
+    const handleFilterChange = (filter, value) => {
+      console.log('Filter:', filter, 'Value:', value);
+      setFilter((prevFilter) => ({ ...prevFilter, [filter]: value }));
     }
 
   return (
@@ -146,6 +277,142 @@ const SearchBar = ({searchResults}) => {
         setTimeout(() => {setIsSuggestionVisible(false)}, 100);
       }}    
     >
+      {showFilter && (
+        <div className="shadow-sm rounded-lg p-4 w-auto max-w-96 my-2">
+          <div className="text-lg font-semibold">Filter</div>
+          <div className="grid grid-cols-2 gap-2 w-auto">
+            <div>
+              <label htmlFor="protein-min" className="mb-2 text-sm font-medium text-primary">
+                Protein (min)
+              </label>
+              <input
+                id="protein-min"
+                type="number"
+                className="block w-full p-2 text-sm rounded-lg bg-secondary border-solid border- focus:ring-primary focus:border-primary hover:shadow-md"
+                placeholder="Min Protein"
+                onChange={(e) => handleFilterChange("proteinMin", e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="protein-max" className="mb-2 text-sm font-medium text-primary">
+                Protein (max)
+              </label>
+              <input
+                id="protein-max"
+                type="number"
+                className="block w-full p-2 text-sm rounded-lg bg-secondary border-solid border- focus:ring-primary focus:border-primary hover:shadow-md"
+                placeholder="Max Protein"
+                onChange={(e) => handleFilterChange("proteinMax", e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="calories-min" className="mb-2 text-sm font-medium text-primary">
+                Calories (min)
+              </label>
+              <input
+                id="calories-min"
+                type="number"
+                className="block w-full p-2 text-sm rounded-lg bg-secondary border-solid border- focus:ring-primary focus:border-primary hover:shadow-md"
+                placeholder="Min Calories"
+                onChange={(e) => handleFilterChange("caloriesMin", e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="calories-max" className="mb-2 text-sm font-medium text-primary">
+                Calories (max)
+              </label>
+              <input
+                id="calories-max"
+                type="number"
+                className="block w-full p-2 text-sm rounded-lg bg-secondary border-solid border- focus:ring-primary focus:border-primary hover:shadow-md"
+                placeholder="Max Calories"
+                onChange={(e) => handleFilterChange("caloriesMax", e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="fat-min" className="mb-2 text-sm font-medium text-primary">
+                Fat (min)
+              </label>
+              <input
+                id="fat-min"
+                type="number"
+                className="block w-full p-2 text-sm rounded-lg bg-secondary border-solid border- focus:ring-primary focus:border-primary hover:shadow-md"
+                placeholder="Min Fat"
+                onChange={(e) => handleFilterChange("fatMin", e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="fat-max" className="mb-2 text-sm font-medium text-primary">
+                Fat (max)
+              </label>
+              <input
+                id="fat-max"
+                type="number"
+                className="block w-full p-2 text-sm rounded-lg bg-secondary border-solid border- focus:ring-primary focus:border-primary hover:shadow-md"
+                placeholder="Max Fat"
+                onChange={(e) => handleFilterChange("fatMax", e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="sodium-min" className="mb-2 text-sm font-medium text-primary">
+                Sodium (min)
+              </label>
+              <input
+                id="sodium-min"
+                type="number"
+                className="block w-full p-2 text-sm rounded-lg bg-secondary border-solid border- focus:ring-primary focus:border-primary hover:shadow-md"
+                placeholder="Min Sodium"
+                onChange={(e) => handleFilterChange("sodiumMin", e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="sodium-max" className="mb-2 text-sm font-medium text-primary">
+                Sodium (max)
+              </label>
+              <input
+                id="sodium-max"
+                type="number"
+                className="block w-full p-2 text-sm rounded-lg bg-secondary border-solid border- focus:ring-primary focus:border-primary hover:shadow-md"
+                placeholder="Max Sodium"
+                onChange={(e) => handleFilterChange("sodiumMax", e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="rating-min" className="mb-2 text-sm font-medium text-primary">
+                Rating (min)
+              </label>
+              <input
+                id="rating-min"
+                type="number"
+                min="0"
+                max="5"
+                step="0.1"
+                className="block w-full p-2 text-sm rounded-lg bg-secondary border-solid border- focus:ring-primary focus:border-primary hover:shadow-md"
+                placeholder="Min Rating"
+                onChange={(e) => handleFilterChange("ratingMin", e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="rating-max" className="mb-2 text-sm font-medium text-primary">
+                Rating (max)
+              </label>
+              <input
+                id="rating-max"
+                type="number"
+                min="0"
+                max="5"
+                step="0.1"
+                className="block w-full p-2 text-sm rounded-lg bg-secondary border-solid border- focus:ring-primary focus:border-primary hover:shadow-md"
+                placeholder="Max Rating"
+                onChange={(e) => handleFilterChange("ratingMax", e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex">
+      <div className="flex-grow mx-2">
       <label
         htmlFor="default-search"
         className="mb-2 text-sm font-medium text-primary sr-only"
@@ -215,13 +482,18 @@ const SearchBar = ({searchResults}) => {
   <div className="relative w-9 h-5 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
 </label>
         </div>
-
+        
         <button
           type="submit"
           className="text-button-primary absolute end-2.5 bottom-2.5 bg-primary hover:bg-hover-primary font-medium rounded-lg text-sm px-4 py-2"
         >
           Search
         </button>
+      </div>
+      </div>
+      <button type="button" onClick={()=>setShowFilter(!showFilter)} className="">
+    <svg height="20" viewBox="0 0 1792 1792" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M1595 295q17 41-14 70l-493 493v742q0 42-39 59-13 5-25 5-27 0-45-19l-256-256q-19-19-19-45v-486l-493-493q-31-29-14-70 17-39 59-39h1280q42 0 59 39z"/></svg>
+      </button>
       </div>
     </form>
 
