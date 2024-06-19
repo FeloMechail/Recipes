@@ -107,9 +107,8 @@ const SearchBar = ({searchResults}) => {
       } 
     }, [data]);
 
-
   const handleInputChange = (event) => {
-    setSearchTerm(event.target.value);
+    setSearchTerm(event.target.value);  
   };
 
   const handleSearch = async (event) => {
@@ -143,6 +142,9 @@ const SearchBar = ({searchResults}) => {
     <form
       onSubmit={handleSearch}
       className="md:max-w-4xl lg:max-w-5xl mx-auto m-5 max-w-sm"
+      onBlur={() => {
+        setTimeout(() => {setIsSuggestionVisible(false)}, 100);
+      }}    
     >
       <label
         htmlFor="default-search"
@@ -150,7 +152,7 @@ const SearchBar = ({searchResults}) => {
       >
         Search
       </label>
-      <div className="relative" tabIndex="0" onBlur={() => setIsSuggestionVisible(false)} onFocus={() => setIsSuggestionVisible(true)}>
+      <div className="relative" tabIndex="0" >
         <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
           <svg
             className="w-4 h-4 text-icon-primary"
@@ -174,11 +176,12 @@ const SearchBar = ({searchResults}) => {
           placeholder="Search Mockups, Logos..."
           value={searchTerm}
           onChange={handleInputChange}
+          onFocus={() => setIsSuggestionVisible(true)}
           required
         />
          {/* Suggestions dropdown */}
-         {(suggestions.length > 0 && searchTerm.length != 0 && isSuggestionVisible ) && (
-            <ul className="absolute z-10 w-full bg-white shadow-md max-h-60 overflow-auto rounded-lg">
+         {(suggestions.length > 0 && searchTerm.length != 0 ) && (
+            <ul className= {`absolute z-10 w-full bg-white shadow-md max-h-60 overflow-auto rounded-lg ${isSuggestionVisible ? 'block' : 'hidden'}`}>
               {suggestions.slice(0, 5).map((suggestion, index) => (
                 <li
                   key={index}
