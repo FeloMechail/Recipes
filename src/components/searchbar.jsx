@@ -121,7 +121,7 @@ const generateTask = (text) => {
       hybrid: {
         query: "${text}"
       }
-      limit: 5
+      limit: 2
     ) {
       title
 			rating
@@ -176,28 +176,29 @@ const SearchBar = ({searchResults}) => {
     console.log("filter", typeof filter)
     console.log("filter length", Object.keys(filter).length)
 
-    // Debounce the search input to avoid multiple renders
-    const debouncedSearch = useCallback(
-      debounce((query) => {
-        console.log('Debouncing search with query:', query); // Add this line
-        if (!stopSearch) {
-          refetch({ query });
-        }
-      }, 500),
-      [stopSearch, refetch]
-    );
+    // // Debounce the search input to avoid multiple renders
+    // const debouncedSearch = useCallback(
+    //   debounce((query) => {
+    //     console.log('Debouncing search with query:', query);
+    //     if (!stopSearch) {
+    //       refetch({ query });
+    //     }
+    //   }, 500),
+    //   [stopSearch, refetch]
+    // );
 
     useEffect(() => {
       if(!showFilter){
         setFilter({});
       }
 
-        if (searchTerm) {
+        if (searchTerm && !aiiloading) {
           setIsSuggestionVisible(true);
           // Only refetch the query if searchTerm is not empty
-          debouncedSearch(searchTerm);
+          refetch({ query: searchTerm });
         }
-    }, [searchTerm]);
+
+    }, [searchTerm, showFilter]);
    
     useEffect(() => {
       if (data) {
@@ -224,17 +225,17 @@ const SearchBar = ({searchResults}) => {
     }
 
     if (useAi) {
-      setStopSearch(false);
       const query = filteredQuery || generateTask(searchTerm);
+
       setLoading(true);
       
       const { data } = await client.query({
         query: gql`${query}`,
       });
 
-      setLoading(false);
-
+      
       if (data) {
+        setLoading(false);
         console.log('AI data:', data);
         searchResults({ searchTerm, dataDict: data.Get.Recipes, useAi });
       }
@@ -278,7 +279,7 @@ const SearchBar = ({searchResults}) => {
       }}    
     >
       {showFilter && (
-        <div className="shadow-sm rounded-lg p-4 w-auto max-w-96 my-2">
+        <div className="shadow-md rounded-lg p-4 max-w-96 my-2">
           <div className="text-lg font-semibold">Filter</div>
           <div className="grid grid-cols-2 gap-2 w-auto">
             <div>

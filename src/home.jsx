@@ -56,7 +56,7 @@ function Home() {
   console.log("data: ", data);
 
   // Determine whether to display search results or top recipes
-  const displayData = searchTerm ? searchResults.dataDict : data?.Get?.Recipes || [];
+  const displayData = searchTerm ? searchResults.dataDict || [] : data?.Get?.Recipes || [];
 
   return (
     <div className="h-full w-full">
@@ -66,8 +66,21 @@ function Home() {
       <div className="text-center font-semibold text-3xl pb-1">
         {/* Display search term if present */}
         {searchTerm && `Results for "${searchTerm}"`}
-        {searchTerm && useAi && <div className="bg-secondary-200 border text-xs p-2">{displayData[0]._additional.generate.groupedResult} </div>}
+        { searchTerm && useAi &&
+      <div className="flex flex-col items-center gap-2">
+        <div className="p-6 text-center rounded-md shadow bg-white">
+          <div className="w-auto max-w-4xl flex flex-col items-start text-black">
+            <span className="text-lg font-bold">AI response</span>
+            <p className="mt-4 text-base">
+              {searchResults.dataDict ? searchResults.dataDict[0]._additional.generate.groupedResult : "No data found"}
+            </p>
+          </div>
+        </div>
       </div>
+      }
+
+      </div>
+
       {loading ? <p>Loading...</p> :
       <div className="flex justify-center m-2">
         <div className="grid grid-cols-5 gap-10">
