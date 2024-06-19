@@ -21,12 +21,12 @@ Get {
       generate (
         groupedResult: {
       task: """
-      You are a professional cook assistant AI. You will assist with cooking-related inquiries by using the given recipe and extracting necessary information from it. Your responses should be clear, precise, and tailored to the specific prompt without repeating any information. If information is not given in the recipe, say so. Give me an answer in 2 sentences or less.
+      You are a professional cook assistant AI. Assist with whatever the user is asking about the recipe. Your responses should be clear, precise, and tailored to the specific prompt without repeating any information. use only from given information about recipes.
 
-  "prompt"
+      "prompt"
 
-  ${text}
-  """
+      ${text}
+      """
       }
       ) {
         groupedResult
@@ -45,6 +45,7 @@ const ChatBar = () => {
   const [chat, setChat] = useState([]);
   const client = useApolloClient();
   const endOfMessagesRef = useRef(null);
+  const formRef = React.useRef(null);
   const { id } = useParams();
 
   // Use effect for scrolling into view
@@ -57,6 +58,8 @@ const ChatBar = () => {
 
   const handleSearch = async (e) => {
     e.preventDefault();
+    setSearchTerm("");
+    formRef.current.reset();
     setIsChatOpen(true);
     setChat((prevChat) => [...prevChat, { user: "user", message: searchTerm }]);
     
@@ -110,8 +113,10 @@ const ChatBar = () => {
   return (
     <div>
     {isChatOpen && (
-        //show square chat box width of chat bar above the chat bar
-        <div className="bg-white border shadow-lg mx-auto max-w-4xl rounded-lg max-h-80 overflow-auto">
+      //show square chat box width of chat bar above the chat bar
+      <div className="bg-white border shadow-lg mx-auto max-w-4xl rounded-lg max-h-80 overflow-auto">
+        <button className="" onClick={() => setChat([])}>clear</button>
+        {chat.length === 0 && <div>Start chatting!</div>}
           <div className="p-4">
             <div className="flex flex-col space-y-2">
             {chat.map((message, index) => (
@@ -137,6 +142,7 @@ const ChatBar = () => {
     )}
     <form
       onSubmit={handleSearch}
+      ref={formRef}
       className="md:max-w-4xl lg:max-w-5xl mx-auto mb-5 max-w-sm"
     >
       <label

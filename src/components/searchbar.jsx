@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useQuery, gql } from "@apollo/client";
+import { useQuery, gql, useApolloClient } from "@apollo/client";
 import {useNavigate, useParams} from "react-router-dom";
 import { set, debounce } from "lodash";
 
@@ -20,14 +20,15 @@ const GET_SUGGESTIONS_QUERY = gql`
     }
   }
 `;
+
 //maybe it doesnt work beccause of second query
-const GET_AI_RECIPES = gql`
-  query GetAiRecipes($query: String!)
+const generateTask = (text) => {
+  return `
   {
   Get {
     Recipes (
       hybrid: {
-        query: $query
+        query: "${text}"
       }
       limit: 5
     ) {
@@ -46,7 +47,8 @@ const GET_AI_RECIPES = gql`
                           do not start with here's a summary, or according to the recipe, or any other generic phrase. just answer the prompt
 						
 						"prompt"
-						$query
+
+						${text}
             """
           }
         ) {
@@ -57,7 +59,7 @@ const GET_AI_RECIPES = gql`
     }
   }
 }
-`;
+  `};
 
 const SearchBar = ({searchResults}) => {
   const navigate = useNavigate();
@@ -68,6 +70,7 @@ const SearchBar = ({searchResults}) => {
   const [stopSearch, setStopSearch] = useState(false);
   const [aiiloading, setLoading] = useState(false);
   const [isSuggestionVisible, setIsSuggestionVisible] = useState(false);
+  const client = useApolloClient();
 
  
     // Use the useQuery hook at the top level of your component
@@ -76,13 +79,7 @@ const SearchBar = ({searchResults}) => {
       skip: !searchTerm, // Skip the query if searchTerm is empty
     });
 
-    // Query for AI recipes, triggered by `triggerAiSearch`
-  const { data: aiData, loading: aiLoading, error: aiError, refetch: refetchAI } = useQuery(GET_AI_RECIPES, {
-    variables: { query: searchTerm },
-    skip: true, // Only run this query when triggerAiSearch is true
-  });
-
-  console.log('AI switch:', useAi);
+    console.log('AI switch:', useAi);
 
     // Debounce the search input to avoid multiple renders
     const debouncedSearch = useCallback(
@@ -91,7 +88,7 @@ const SearchBar = ({searchResults}) => {
         if (!stopSearch) {
           refetch({ query });
         }
-      }, 5000),
+      }, 500),
       [stopSearch, refetch]
     );
 
@@ -110,14 +107,6 @@ const SearchBar = ({searchResults}) => {
       } 
     }, [data]);
 
-    useEffect(() => {
-
-      if (aiData) {
-          //console.log('AI data:', aiData);
-          //searchResults({ searchTerm, dataDict: aiData.Get.Recipes, useAi });
-      }
-    }, [aiLoading, aiData, searchResults, searchTerm, useAi]);
-
 
   const handleInputChange = (event) => {
     setSearchTerm(event.target.value);
@@ -127,16 +116,14 @@ const SearchBar = ({searchResults}) => {
     event.preventDefault(); // Prevent the form from submitting
     if (useAi) {
       setStopSearch(false);
-      const { data, aaaloading, errors } = await refetchAI({ query: searchTerm });
-      console.log("loading:", aaaloading);
+      let query = generateTask(searchTerm);
+      setLoading(true);
+      
+      const { data } = await client.query({
+        query: gql`${query}`,
+      });
 
-      if (stopSearch) {
-        return;
-      }
-
-      if (errors) {
-        console.log('AI error:', errors);
-      }
+      setLoading(false);
 
       if (data) {
         console.log('AI data:', data);
