@@ -61,7 +61,7 @@ function Home() {
   return (
     <div className="h-full w-full">
       <Header />
-      <div className="md:text-9xl text-center text-4xl">Text</div>
+      <div className="md:text-8xl text-center text-4xl">Explore Recipes or Ask for recommendations</div>
       <SearchBar searchResults={handleSearchResults} />
       <div className="text-center font-semibold text-3xl pb-1">
         {/* Display search term if present */}
