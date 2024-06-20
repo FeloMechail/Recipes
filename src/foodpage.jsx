@@ -122,8 +122,8 @@ const FoodPage = () => {
 
       <div>
         <img
-          src="https://picsum.photos/1920/1080"
-          alt="Random Image"
+          src="https://images.unsplash.com/photo-1624811533744-f85d5325d49c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+          alt="Photo by Towfiqu barbhuiya on Unsplash"
           className="w-full h-80 object-cover"
         />
       </div>

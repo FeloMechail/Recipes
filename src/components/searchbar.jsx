@@ -96,7 +96,8 @@ const generatedHybridFilterTask = (Ai, query, proteinMin, proteinMax, caloriesMi
           groupedResult: {
             task: """
                           You are a professional cook assistant AI. You will assist with cooking-related inquiries by using the given list of information about recipes. Your responses should be clear, precise, and tailored to the specific prompt without repeating any information.
-                          do not start with here's a summary, or according to the recipe, or any other generic phrase. answer only from the given information about recipes. if there is not information to answer the prompt, respond with "I don't have that information." give 2-3 sentences.
+                          do not start with here's a summary, or according to the recipe, or any other generic phrase. answer only from the given information about recipes. do not start with here's a summary, or according to the recipe, or any other generic phrase. answer only from the given information about recipes.
+                          if there is not information to answer the prompt, respond with "I don't have that information." give 2-3 sentences.
 
                           "prompt"
 
@@ -121,25 +122,23 @@ const generateTask = (text) => {
       hybrid: {
         query: "${text}"
       }
-      limit: 2
+      limit: 5
     ) {
       title
 			rating
-			ingredients
-			calories
-			protein
-			fat
       _additional {
 				id
         generate(
           groupedResult: {
             task: """
                           You are a professional cook assistant AI. You will assist with cooking-related inquiries by using the given list of information about recipes. Your responses should be clear, precise, and tailored to the specific prompt without repeating any information.
-                          do not start with here's a summary, or according to the recipe, or any other generic phrase. answer only from the given information about recipes. if there is not information to answer the prompt, respond with "I don't have that information." give 2-3 sentences.
+                          do not start with here's a summary, or according to the recipe, or any other generic phrase. answer only from the given information about recipes. do not start with here's a summary, or according to the recipe, or any other generic phrase. answer only from the given information about recipes.
+                          if there is not information to answer the prompt, respond with "I don't have that information." give 2-3 sentences.
 						"prompt"
 
 						${text}
             """
+            properties: ["title", "rating"]
           }
         ) {
           groupedResult
@@ -466,16 +465,6 @@ const SearchBar = ({searchResults}) => {
         
         <div
           className="absolute end-14 bottom-2.5 px-5 pb-1.5">
-
-            {aiiloading && 
-            <button
-          type="button"
-          className="text-button-primary bg-primary hover:bg-hover-primary font-medium rounded-lg text-sm pr-2"
-          onClick={() => setStopSearch(true)}
-        >
-          STOP
-        </button>
-            }
 
           <label className="inline-flex items-center cursor-pointer">
               <div className="font-extralight text-xs mx-1.5">Toggle ai</div>

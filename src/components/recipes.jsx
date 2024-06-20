@@ -7,7 +7,7 @@ const RecipeDetails = ({ recipe }) => {
     <div className="max-w-4xl mx-auto p-4">
       <h1 className="text-2xl font-bold text-gray-800">{recipe.title}</h1>
       <p className="text-md text-gray-600 mt-2">
-        Published on: {new Date(recipe.date).toLocaleDateString()}
+        Published on: {recipe.date ? recipe.date : "Unknown"}
       </p>
       <div className="mt-4">
         <h2 className="text-xl font-semibold">Description</h2>

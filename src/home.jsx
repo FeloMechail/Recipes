@@ -68,10 +68,10 @@ function Home() {
         {searchTerm && `Results for "${searchTerm}"`}
         { searchTerm && useAi &&
       <div className="flex flex-col items-center gap-2">
-        <div className="p-6 text-center rounded-md shadow bg-white">
+        <div className="p-6 rounded-md shadow bg-white">
           <div className="w-auto max-w-4xl flex flex-col items-start text-black">
             <span className="text-lg font-bold">AI response</span>
-            <p className="mt-4 text-base">
+            <p className="mt-4 text-base text-left">
               {searchResults.dataDict ? searchResults.dataDict[0]._additional.generate.groupedResult : "No data found"}
             </p>
           </div>
@@ -81,13 +81,12 @@ function Home() {
 
       </div>
 
-      {loading ? <p>Loading...</p> :
+      {loading ? <p className="flex justify-center items-center h-full">Loading...</p> :
       <div className="flex justify-center m-2">
         <div className="grid grid-cols-5 gap-10">
           {displayData.map((recipe) => (
             <FoodCards
               key={recipe._additional.id}
-              image={"https://picsum.photos/350"}
               title={recipe.title}
               rating={recipe.rating}
               id={recipe._additional.id}
@@ -96,6 +95,9 @@ function Home() {
         </div>
       </div>
       }
+
+
+      <div className="m-3 text-right text-gray-500 text-sm">Made by: Felopater Mechail @ mechailphilip@gmail.com</div>
     </div>
   );
 }
