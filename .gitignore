@@ -22,4 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.pre-commit-config.yaml
 src/_codux/*

@@ -10,29 +10,12 @@ import FoodPage from "../foodpage";
 
 const FoodCards = ({ title, rating, id }) => {
   const navigate = useNavigate();
-  const [imageUrl, setImageUrl] = useState('https://assets.epicurious.com/photos/5a0ddb046e013d11dde39630/1:1/pass/Epi_Placeholder_Image.jpg');
-
-
-  const getImage = async (name) => {
-     const url = `https://www.epicurious.com/search?q=${encodeURIComponent(name)}`;
-     try {
-        const response = await fetch(url);
-        const text = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, 'text/html');
-        const imageLink = doc.querySelector(`img[alt="${name}"]`);
-        if (imageLink) {
-          setImageUrl(imageLink.src);
-        }
-     } catch (error) {
-        console.error("Error fetching image: ", error);
-  }
-  };
 
   const handleClick = () => {``
     navigate(`/${id}`);
   };
 
+  // Function to render stars on the card
   const renderStars = (rating) => {
     let stars = [];
     for (let i = 0; i < 5; i++) {

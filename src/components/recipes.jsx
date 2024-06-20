@@ -1,5 +1,6 @@
 import React from "react";
 
+// RecipeDetails component
 const RecipeDetails = ({ recipe }) => {
   console.log(recipe);
 

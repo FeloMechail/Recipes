@@ -4,17 +4,17 @@ import SearchBar from "./components/searchbar";
 import FoodCards from "./components/food-cards";
 import Header from "./components/header";
 import { useQuery, gql } from "@apollo/client";
-import { set } from "lodash";
 
+//home page
 function Home() {
   const [searchResults, setSearchResults] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [useAi, setUseAi] = useState(false);  // State to toggle AI
   const location = useLocation();
 
+  // Handle search results from search bar component
   useEffect(() => {
     if (location.state && location.state.e != null) {
-      console.log("location.state: ", location.state.e);
       handleSearchResults(location.state.e);
     } else if (location.state && location.state.e == null) {
       //reset search results
@@ -24,8 +24,8 @@ function Home() {
   }
   , [location]);
 
+  // Handle search results and check if AI is enabled
   const handleSearchResults = (results) => {
-    console.log("results: ", results);
     setSearchResults(results);
     setSearchTerm(results.searchTerm);
     setUseAi(results.useAi);

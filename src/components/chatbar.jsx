@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { gql, useApolloClient } from "@apollo/client";
 
-// Simplify generateTask function for clarity
+// dynamic query generation
 const generateTask = (text, ids) => {
   return `
      {
@@ -39,6 +39,7 @@ Get {
   `
 }
 
+// ChatBar component
 const ChatBar = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -56,22 +57,24 @@ const ChatBar = () => {
   }, [chat]);
 
 
+  // Handle search form submission and chat messages
   const handleSearch = async (e) => {
     e.preventDefault();
     setSearchTerm("");
-    formRef.current.reset();
-    setIsChatOpen(true);
+    formRef.current.reset(); // Clear input field
+    setIsChatOpen(true); // Open chat box when user sends a message
+
+    // Add user message to chat
     setChat((prevChat) => [...prevChat, { user: "user", message: searchTerm }]);
     
-    let query = generateTask(searchTerm, id);
+    let query = generateTask(searchTerm, id); // Generate query based on user input
 
     try {
-      const { data } = await client.query({
+      const { data } = await client.query({ // Send query to Apollo client
         query: gql`${query}`,
       });
-
-      console.log("AI response:", data);
-
+      
+      // Add bot message to chat if data is returned
       if(data){
         setChat((prevChat) => [...prevChat, { user: "bot", message: data.Get.Recipes[0]._additional.generate.groupedResult }]);
       }    
@@ -79,7 +82,6 @@ const ChatBar = () => {
       console.error("An error occurred:", error);
       if (error.graphQLErrors) {
         error.graphQLErrors.forEach((err) => {
-          console.log("GraphQL error:", err.message);
         });
       }
       if (error.networkError) {
@@ -87,28 +89,7 @@ const ChatBar = () => {
       }
     }
 
-    console.log("Searching for:", searchTerm);
   };
-
-  const mockChat = [
-    {
-      user: "user",
-      message: "Hello",
-    },
-    {
-      user
-      : "bot",
-      message: "Hi! I'm a chatbot. How can I help you today?",
-    },
-    {
-      user: "user",
-      message: "I want to know more about this recipe",
-    },
-    {
-      user: "bot",
-      message: "Sure! What do you want to know?",
-    },
-  ];
 
   return (
     <div>

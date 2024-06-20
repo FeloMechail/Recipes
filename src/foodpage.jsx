@@ -13,7 +13,6 @@ import Header from "./components/header";
 import RecipeDetails from "./components/recipes";
 import ChatBar from "./components/chatbar";
 import FoodCards from "./components/food-cards";
-import TestQuery from "./testquery";
 
 const GET_RECIPE = gql`
 query GetRecipe($id: TextStringGetObjectsRecipes!)
@@ -68,6 +67,7 @@ query GetRecipe($id: String! $ids: TextStringGetObjectsRecipes!)
 }
 `;
 
+// FoodPage component
 const FoodPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -75,31 +75,37 @@ const FoodPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
 
+  // Query to get the recipe
   const { loading, error, data } = useQuery(GET_RECIPE, {
     variables: { id },
   });
 
+  // Query to get similar recipes
   const { loading: similarLoading, error: similarError, data: similarData } = useQuery(GET_SIMILIAR_RECIPES, {
     variables: { id: id, ids: id },
   });
 
 
+  // Handle search form submission
   const handleSearch = (e) => {
     navigate('/', { state: { e } });
-    console.log("Search term:", e);
   }
 
+  // Error handling
   useEffect(() => {
     if (error) {
       console.error("Failed to load recipe:", error);
 
     }
+
+    //if data is available, set the recipe page
     if (data) {
       setRecipes(data.Get.Recipes[0]);
     }
   }, [data, error, id]);
 
 
+  // Log similar recipes
   useEffect(() => {
     if (similarError) {
       console.error("Failed to load similar recipes:", similarError);

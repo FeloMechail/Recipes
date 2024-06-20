@@ -3,7 +3,7 @@ import { useQuery, gql, useApolloClient } from "@apollo/client";
 import {useNavigate, useParams} from "react-router-dom";
 import { set, debounce } from "lodash";
 
-// Define the GraphQL query outside of the component
+//Hybrid search query for dynamic suggestions
 const GET_SUGGESTIONS_QUERY = gql`
   query GetSuggestions($query: String!) {
     Get {
@@ -21,6 +21,7 @@ const GET_SUGGESTIONS_QUERY = gql`
   }
 `;
 
+//Hybrid search query for custom prompts + filters
 const generatedHybridFilterTask = (Ai, query, proteinMin, proteinMax, caloriesMin, caloriesMax, fatMin, fatMax, sodiumMin, sodiumMax, ratingMin, ratingMax) => {
   let requireAi = Ai;
   return `
@@ -114,6 +115,7 @@ const generatedHybridFilterTask = (Ai, query, proteinMin, proteinMax, caloriesMi
 }
   `};
 
+//Hybrid search query for custom prompts without filters
 const generateTask = (text) => {
   return `
   {
@@ -164,27 +166,11 @@ const SearchBar = ({searchResults}) => {
 
   const client = useApolloClient();
  
-    // Use the useQuery hook at the top level of your component
+    // Fetch suggestions based on the search term
     const { data, loading, error, refetch } = useQuery(GET_SUGGESTIONS_QUERY, {
       variables: { query: searchTerm },
       skip: !searchTerm, // Skip the query if searchTerm is empty
     });
-
-    console.log('AI switch:', useAi);
-    console.log("filter", showFilter) 
-    console.log("filter", typeof filter)
-    console.log("filter length", Object.keys(filter).length)
-
-    // // Debounce the search input to avoid multiple renders
-    // const debouncedSearch = useCallback(
-    //   debounce((query) => {
-    //     console.log('Debouncing search with query:', query);
-    //     if (!stopSearch) {
-    //       refetch({ query });
-    //     }
-    //   }, 500),
-    //   [stopSearch, refetch]
-    // );
 
     useEffect(() => {
       if(!showFilter){
@@ -215,14 +201,14 @@ const SearchBar = ({searchResults}) => {
     event.preventDefault(); // Prevent the form from submitting
     let filteredQuery = null;
 
+    // Generate query based on the search term
     if (Object.keys(filter).length > 0) {
-      console.log('Filter:', filter);
       let { proteinMin, proteinMax, caloriesMin, caloriesMax, fatMin, fatMax, sodiumMin, sodiumMax, ratingMin, ratingMax } = filter;
 
       filteredQuery = generatedHybridFilterTask(useAi, searchTerm, proteinMin || null, proteinMax || null, caloriesMin || null, caloriesMax || null, fatMin || null, fatMax || null, sodiumMin || null, sodiumMax || null, ratingMin || null, ratingMax || null);
-      console.log('Generated query:', filteredQuery);
     }
 
+    // if AI is enabled, use the generated task query
     if (useAi) {
       const query = filteredQuery || generateTask(searchTerm);
 
@@ -232,15 +218,14 @@ const SearchBar = ({searchResults}) => {
         query: gql`${query}`,
       });
 
-      
+      // If data is returned, update the search results
       if (data) {
         setLoading(false);
-        console.log('AI data:', data);
         searchResults({ searchTerm, dataDict: data.Get.Recipes, useAi });
       }
 
     } else {
-
+      // If AI is disabled but filters are applied, use the filtered query
       if(Object.keys(filter).length > 0){
 
         const { data } = await client.query({
@@ -248,24 +233,23 @@ const SearchBar = ({searchResults}) => {
         });
 
         if (data) {
-          console.log('Filtered data:', data);
           searchResults({ searchTerm, dataDict: data.Get.Recipes, useAi });
         }
         
       } else {
-        console.log("here")
         searchResults({ searchTerm, dataDict, useAi });
 
     }
   };
 }
 
+  //navigate to the selected suggestion
     const handleSuggestionClick = (suggestion) => {
       navigate(`/${suggestion[2]}`);
     }
 
+    //add filter values to the filter state
     const handleFilterChange = (filter, value) => {
-      console.log('Filter:', filter, 'Value:', value);
       setFilter((prevFilter) => ({ ...prevFilter, [filter]: value }));
     }
 

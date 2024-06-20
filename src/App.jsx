@@ -11,6 +11,7 @@ function App() {
   const [error, setError] = useState(false);
   const [errorInfo, setErrorInfo] = useState(null);
 
+  // Check if Weaviate is ready and the collection is available
   useEffect(() => {
     const fetchWeaviateReady = async () => {
       try {
