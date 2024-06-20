@@ -1,0 +1,95 @@
+version: '3.7'
+services:
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.25.4
+    command:
+      - --host
+      - 0.0.0.0
+      - --port
+      - '8080'
+      - --scheme
+      - http
+    ports:
+      - 8080:8080
+      - 50051:50051
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    restart: on-failure
+    environment:
+      QNA_INFERENCE_API: 'http://qna-transformers:8080'
+      #NER_INFERENCE_API: 'http://ner-transformers:8080'
+      SUM_INFERENCE_API: 'http://sum-transformers:8080'
+      QUERY_DEFAULTS_LIMIT: 25
+      MODULES_CLIENT_TIMEOUT: '10m'
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      DEFAULT_VECTORIZER_MODULE: 'text2vec-ollama'
+      ENABLE_MODULES: 'text2vec-ollama,qna-transformers,sum-transformers,generative-ollama'
+      CLUSTER_HOSTNAME: 'node1'
+    networks:
+      - weaviate_network
+
+  qna-transformers:
+    image: cr.weaviate.io/semitechnologies/qna-transformers:distilbert-base-uncased-distilled-squad
+    environment:
+      ENABLE_CUDA: '1'
+      NVIDIA_VISIBLE_DEVICES: 'all'
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - capabilities: 
+            - 'gpu'
+    networks:
+      - weaviate_network
+
+  # ner-transformers:
+  #   image: cr.weaviate.io/semitechnologies/ner-transformers:dbmdz-bert-large-cased-finetuned-conll03-english
+  #   environment:
+  #     ENABLE_CUDA: '1'
+  #     NVIDIA_VISIBLE_DEVICES: 'all'
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #         - capabilities: 
+  #           - 'gpu'
+  #   networks:
+  #     - weaviate_network
+
+  sum-transformers:
+    image: cr.weaviate.io/semitechnologies/sum-transformers:facebook-bart-large-cnn-1.0.0
+    environment:
+      ENABLE_CUDA: '1'
+      NVIDIA_VISIBLE_DEVICES: 'all'
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - capabilities: 
+            - 'gpu'
+    networks:
+      - weaviate_network
+
+  ollama:
+    image: ollama/ollama
+    environment:
+      ENABLE_CUDA: '1'
+      NVIDIA_VISIBLE_DEVICES: 'all'
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - capabilities: 
+            - 'gpu'
+    ports:
+      - 11434:11434
+    networks:
+      - weaviate_network
+            
+volumes:
+  weaviate_data:
+
+networks:
+  weaviate_network:
+    driver: bridge
